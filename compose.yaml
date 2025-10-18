@@ -1,0 +1,56 @@
+version: '3.8'
+
+include:
+  - proxy.yaml
+
+services:
+  web:
+    image: cr.yandex/crp48bqk06smf0548js4/hw4_t2_permanma:alpine
+    container_name: application
+    networks:
+      backend:
+        ipv4_address: 172.20.0.5
+    environment:
+      DB_HOST: db
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8
+    container_name: database
+    command: ["mysqld", "--mysql-native-password=ON"]
+    networks:
+      backend:
+        ipv4_address: 172.20.0.10
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    restart: unless-stopped
+    volumes:
+      - db_web:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"]
+      start_period: 60s
+      interval: 4s
+      timeout: 1s
+      retries: 60
+
+networks:
+  backend:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.20.0.0/24
+
+volumes:
+  db_web:
+    name: db_web
