@@ -1,0 +1,11 @@
+.env
+.git
+LICENSE
+proxy.yaml
+README.md
+schema.pdf
+Dockerfile
+Dockerfile.python
+.dockerignore
+nginx/
+haproxy/
