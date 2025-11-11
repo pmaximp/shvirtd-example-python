@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  web:
+    image: my_app:latest
+    container_name: application
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - backend
+    environment:
+      DB_HOST: db
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    container_name: database
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+    command: ["mysqld", "--mysql-native-password=ON"]
+    networks:
+      - backend
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - db_web:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"]
+      start_period: 60s
+      interval: 4s
+      timeout: 1s
+      retries: 60
+
+  reverse-proxy:
+      image: haproxy:2.4
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: any
+      networks:
+        backend:
+          aliases:
+            - haproxy
+      ports:
+        - target: 8080
+          published: 8080
+          protocol: tcp
+          mode: host
+      volumes:
+        - ./haproxy/reverse/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:rw
+      depends_on:
+        - web
+
+  ingress-proxy:
+      image: nginx:latest
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: any
+      networks:
+        - host
+      volumes:
+        - ./nginx/ingress/default.conf:/etc/nginx/conf.d/default.conf:rw
+        - ./nginx/ingress/nginx.conf:/etc/nginx/nginx.conf:rw
+      depends_on:
+        - reverse-proxy    
+
+networks:
+  backend:
+    driver: overlay
+    attachable: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+  host:
+    name: host
+    external: true
+
+volumes:
+  db_web:
+    name: db_web
+    driver: local
