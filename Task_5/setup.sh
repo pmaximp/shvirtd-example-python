@@ -37,8 +37,8 @@ docker run -it -d --network ${DOCKER_NETWORK} \
     -e MYSQL_PASSWORD=${MYSQL_PASSWORD} \
     -v /opt/backup:/backup \
     -v $(pwd)/Task_5/bin/setup_backup.sh:/usr/local/bin/setup_backup.sh \
-    -v $(pwd)/Task_5/bin/crontab:/var/spool/cron/crontabs/root \ 
-    --name hw4_t5_perman cr.yandex/crp48bqk06smf0548js4/mysqldump
+    -v $(pwd)/Task_5/bin/crontab:/var/spool/cron/crontabs/root \
+    --name hw4_t5_perman cr.yandex/crp48bqk06smf0548js4/mysqldump:by_perman
 
 # Ждем 1 минуту чтобы бэкап был готов
 echo "### Бэкап создается... ###"
