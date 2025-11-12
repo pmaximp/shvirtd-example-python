@@ -64,7 +64,7 @@ services:
           protocol: tcp
           mode: host
       volumes:
-        - ./haproxy/reverse/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:rw
+        - ./haproxy/reverse/haproxy_dns.cfg:/usr/local/etc/haproxy/haproxy.cfg:rw
       depends_on:
         - web
 
