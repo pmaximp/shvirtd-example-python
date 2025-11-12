@@ -7,8 +7,8 @@ services:
     deploy:
       replicas: 1
       restart_policy:
-        condition: any
-        delay: 5s
+        condition: on-failure
+        delay: 30s
         max_attempts: 3
     networks:
       - backend
@@ -17,6 +17,7 @@ services:
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_NAME: ${MYSQL_DATABASE}
+    command: ["sleep 60", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
     depends_on:
       - db
 
@@ -27,7 +28,7 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-        delay: 10s
+        delay: 15s
         max_attempts: 5
     command: ["mysqld", "--mysql-native-password=ON"]
     networks:
@@ -42,7 +43,7 @@ services:
     volumes:
       - db_web:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD || exit 1"]
       start_period: 60s
       interval: 4s
       timeout: 1s
@@ -53,7 +54,7 @@ services:
       deploy:
         replicas: 1
         restart_policy:
-          condition: any
+          condition: always
       networks:
         backend:
           aliases:
@@ -73,7 +74,10 @@ services:
       deploy:
         replicas: 1
         restart_policy:
-          condition: any
+          condition: always
+        placement:
+          constraints:
+            - node.role == manager
       networks:
         - host
       volumes:
